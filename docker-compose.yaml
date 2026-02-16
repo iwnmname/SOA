@@ -1,0 +1,12 @@
+version: "3.8"
+services:
+  order-service:
+    build:
+      context: ./service
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3

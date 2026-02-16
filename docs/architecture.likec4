@@ -1,0 +1,117 @@
+specification {
+  element actor
+  element system
+  element container
+  element database
+  element queue
+}
+
+model {
+
+  buyer = actor 'Покупатель'
+  seller = actor 'Продавец'
+  paymentGateway = system 'Платёжный шлюз'
+  emailProvider = system 'Email/SMS провайдер'
+
+  marketplaceA = system 'Маркетплейс' {
+    description 'Вариант A — микросервисы'
+
+    apiGw = container 'API Gateway' { technology 'Nginx' }
+
+    userSvc = container 'User Service' { technology 'Go' }
+    userDb = database 'User DB' { technology 'PostgreSQL' }
+
+    catalogSvc = container 'Catalog Service' { technology 'Go' }
+    catalogDb = database 'Catalog DB' { technology 'PostgreSQL' }
+    search = database 'Search Index' { technology 'Elasticsearch' }
+
+    feedSvc = container 'Feed Service' { technology 'Python' }
+    feedCache = database 'Feed Cache' { technology 'Redis' }
+
+    orderSvc = container 'Order Service' { technology 'Go' }
+    orderDb = database 'Order DB' { technology 'PostgreSQL' }
+
+    paymentSvc = container 'Payment Service' { technology 'Go' }
+    paymentDb = database 'Payment DB' { technology 'PostgreSQL' }
+
+    notifSvc = container 'Notification Service' { technology 'Go' }
+    notifDb = database 'Notification DB' { technology 'PostgreSQL' }
+
+    mq = queue 'Message Broker' { technology 'RabbitMQ' }
+
+    apiGw -> userSvc 'REST'
+    apiGw -> catalogSvc 'REST'
+    apiGw -> feedSvc 'REST'
+    apiGw -> orderSvc 'REST'
+
+    userSvc -> userDb 'SQL'
+    catalogSvc -> catalogDb 'SQL'
+    catalogSvc -> search 'HTTP'
+    feedSvc -> feedCache 'Redis'
+    feedSvc -> catalogSvc 'gRPC'
+    orderSvc -> orderDb 'SQL'
+    orderSvc -> paymentSvc 'REST'
+    orderSvc -> catalogSvc 'REST'
+    orderSvc -> userSvc 'REST'
+    paymentSvc -> paymentDb 'SQL'
+    notifSvc -> notifDb 'SQL'
+
+    orderSvc -> mq 'publish'
+    paymentSvc -> mq 'publish'
+    notifSvc -> mq 'subscribe'
+    feedSvc -> mq 'subscribe'
+  }
+
+  buyer -> marketplaceA.apiGw 'HTTPS'
+  seller -> marketplaceA.apiGw 'HTTPS'
+  marketplaceA.paymentSvc -> paymentGateway 'HTTPS'
+  marketplaceA.notifSvc -> emailProvider 'HTTPS'
+
+  marketplaceB = system 'Маркетплейс (альт.)' {
+    description 'Вариант B — модульный монолит'
+
+    apiGwB = container 'API Gateway' { technology 'Nginx' }
+
+    monolith = container 'Marketplace App' {
+      technology 'Go'
+      description 'Модули: Users, Catalog, Feed, Orders, Payments, Notifications'
+    }
+
+    marketplaceDb = database 'Marketplace DB' {
+      technology 'PostgreSQL'
+      description 'Общая БД. Схемы: users, catalog, orders, payments, notifications'
+    }
+
+    searchB = database 'Search Index' { technology 'Elasticsearch' }
+    cacheB = database 'Feed Cache' { technology 'Redis' }
+
+    apiGwB -> monolith 'REST'
+
+    monolith -> marketplaceDb 'SQL'
+    monolith -> searchB 'HTTP'
+    monolith -> cacheB 'Redis'
+  }
+
+  buyer -> marketplaceB.apiGwB 'HTTPS'
+  seller -> marketplaceB.apiGwB 'HTTPS'
+  marketplaceB.monolith -> paymentGateway 'HTTPS'
+  marketplaceB.monolith -> emailProvider 'HTTPS'
+}
+
+views {
+
+  view context of marketplaceA {
+    title 'Level 1: System Context'
+    include buyer, seller, marketplaceA, paymentGateway, emailProvider
+  }
+
+  view containersA of marketplaceA {
+    title 'Level 2: Вариант A — микросервисы'
+    include *
+  }
+
+  view containersB of marketplaceB {
+    title 'Level 2: Вариант B — модульный монолит'
+    include *
+  }
+}
