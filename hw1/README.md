@@ -151,4 +151,8 @@
 
 ```bash
 docker compose up --build -d
+```
+
+```bash
 curl http://localhost:8080/health
+```
