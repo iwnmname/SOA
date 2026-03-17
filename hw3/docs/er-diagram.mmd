@@ -1,0 +1,43 @@
+erDiagram
+    FLIGHTS {
+        uuid id PK
+        varchar flight_number
+        varchar airline
+        char3 origin_airport
+        char3 destination_airport
+        timestamp departure_time
+        timestamp arrival_time
+        int total_seats
+        int available_seats
+        numeric price
+        varchar status
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    SEAT_RESERVATIONS {
+        uuid id PK
+        uuid flight_id FK
+        uuid booking_id UK
+        int seat_count
+        varchar status
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    BOOKINGS {
+        uuid id PK
+        varchar user_id
+        uuid flight_id
+        varchar passenger_name
+        varchar passenger_email
+        int seat_count
+        numeric total_price
+        varchar status
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    FLIGHTS ||--o{ SEAT_RESERVATIONS : "flight_id"
+    BOOKINGS ||--|| SEAT_RESERVATIONS : "booking_id (logical cross-service link)"
+

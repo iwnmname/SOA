@@ -1,0 +1,74 @@
+services:
+  booking-db:
+    image: postgres:16
+    container_name: hw3-booking-db
+    environment:
+      POSTGRES_DB: booking_db
+      POSTGRES_USER: booking
+      POSTGRES_PASSWORD: booking
+    ports:
+      - "5432:5432"
+    volumes:
+      - booking_db_data:/var/lib/postgresql/data
+
+  flight-db:
+    image: postgres:16
+    container_name: hw3-flight-db
+    environment:
+      POSTGRES_DB: flight_db
+      POSTGRES_USER: flight
+      POSTGRES_PASSWORD: flight
+    ports:
+      - "5433:5432"
+    volumes:
+      - flight_db_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: hw3-redis
+    ports:
+      - "6379:6379"
+
+  flight-service:
+    image: golang:1.25
+    container_name: hw3-flight-service
+    working_dir: /app
+    command: sh -c "go mod download && go run ./flight-service/cmd"
+    depends_on:
+      - flight-db
+      - redis
+    environment:
+      DATABASE_URL: postgres://flight:flight@flight-db:5432/flight_db?sslmode=disable
+      GRPC_PORT: "50051"
+      MIGRATIONS_PATH: file:///app/flight-service/migrations
+      FLIGHT_SERVICE_API_KEY: dev-flight-api-key
+      REDIS_ADDR: redis:6379
+      CACHE_TTL: 7m
+    volumes:
+      - ./:/app
+    ports:
+      - "50051:50051"
+
+  booking-service:
+    image: golang:1.25
+    container_name: hw3-booking-service
+    working_dir: /app
+    command: sh -c "go mod download && go run ./booking-service/cmd"
+    depends_on:
+      - booking-db
+      - flight-service
+    environment:
+      DATABASE_URL: postgres://booking:booking@booking-db:5432/booking_db?sslmode=disable
+      HTTP_PORT: "8080"
+      MIGRATIONS_PATH: file:///app/booking-service/migrations
+      FLIGHT_SERVICE_ADDR: flight-service:50051
+      FLIGHT_SERVICE_API_KEY: dev-flight-api-key
+    volumes:
+      - ./:/app
+    ports:
+      - "8080:8080"
+
+volumes:
+  booking_db_data:
+  flight_db_data:
+
