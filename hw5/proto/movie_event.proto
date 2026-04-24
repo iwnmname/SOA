@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package cinema;
+
+option go_package = "github.com/online-cinema/producer/pb";
+
+enum EventType {
+  EVENT_TYPE_UNSPECIFIED = 0;
+  VIEW_STARTED          = 1;
+  VIEW_FINISHED         = 2;
+  VIEW_PAUSED           = 3;
+  VIEW_RESUMED          = 4;
+  LIKED                 = 5;
+  SEARCHED              = 6;
+}
+
+enum DeviceType {
+  DEVICE_TYPE_UNSPECIFIED = 0;
+  MOBILE                 = 1;
+  DESKTOP                = 2;
+  TV                     = 3;
+  TABLET                 = 4;
+}
+
+message MovieEvent {
+  string     event_id         = 1;
+  string     user_id          = 2;
+  string     movie_id         = 3;
+  EventType  event_type       = 4;
+  int64      timestamp_ms     = 5;
+  DeviceType device_type      = 6;
+  string     session_id       = 7;
+  int32      progress_seconds = 8;
+}
